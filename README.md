@@ -1,0 +1,1 @@
+Python library to generate QR Codes, DPM Codes, 1D Industrial Barcodes, 2D Codes, 1D Reail Barcodes, DotCode.
