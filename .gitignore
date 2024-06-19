@@ -2,3 +2,6 @@ venv/
 __pycache__/
 .pytest_cache/
 bracodes_generator.egg-info/
+
+tmp.py
+bits_formula.txt
