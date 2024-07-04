@@ -56,6 +56,28 @@ def test_encode():
     expected_output = "Data: ['01101100111111101010101010'], Mode: [8], Character Count: [2]"
     assert str(en) == expected_output
 
+    # Test con dati misti
+    en = Encoder()
+    kanji_data = "点茗"
+    en.add_data(kanji_data, mode=MODE_KANJI)
+    latin1_byte_data = "Hello, World!"
+    en.add_data(latin1_byte_data, mode=MODE_BYTE)
+    expected_output = "Data: ['01101100111111101010101010', '01001000011001010110110001101100011011110010110000100000010101110110111101110010011011000110010000100001'], Mode: [8, 4], Character Count: [2, 13]"
+    assert str(en) == expected_output
+
+
+def test_data_encoded():
+    en = Encoder()
+    en.add_data("12345")
+    en.add_data("HELLO")
+    en.add_data("Hello")
+    en.add_data("点茗")
+    str(en)
+    data_encoded = en.get_data_encoded(1)
+    excepted_data_encoded = "0001"
+    assert excepted_data_encoded == data_encoded
+
+
 def test_module_size():
     qr = QRCode()
     assert qr.total_module_by_version(40) == 177*177, f"Expected {177*177} but got {qr.total_module_by_version(40)}"
@@ -84,5 +106,3 @@ def test_total_bits():
     kanji_data = "点茗"
     en.add_data(kanji_data)
     assert en.total_bits(1) == 12+26
-
-    
