@@ -1,4 +1,4 @@
-from barcodes_generator.constraints import MODE_NUMBER, MODE_ALPHANUMERIC, MODE_BYTE, MODE_KANJI, ERROR_CORRECTION_LEVEL_M
+from barcodes_generator.constraints import MODE_NUMBER, MODE_ALPHANUMERIC, MODE_BYTE, MODE_KANJI, ERROR_CORRECTION_LEVEL_M, ERROR_CORRECTION_LEVEL_Q, ERROR_CORRECTION_LEVEL_H, ERROR_CORRECTION_LEVEL_L
 from barcodes_generator.qrcode import QrCode
 from barcodes_generator.dataConverter import DataConverter
 
@@ -25,8 +25,10 @@ def binary_to_decimal(binary_string):
     return decimal_string
 
 def main():
-    qr = QrCode(version=2, error_correction=ERROR_CORRECTION_LEVEL_M)
-    qr.generate("https://www.qrcode.com/")
+    qr = QrCode( error_correction=ERROR_CORRECTION_LEVEL_Q)
+    # qr.generate("https://www.qrcode.com/")
+    qr.generate("12313123231")
+    qr.create_qr_image()
 
     # dataConverter = DataConverter(error_correction=ERROR_CORRECTION_LEVEL_M)
     # encoded_data = dataConverter.encode("https://www.qrcode.com/")

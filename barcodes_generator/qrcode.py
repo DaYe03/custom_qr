@@ -1,5 +1,5 @@
 import numpy as np
-from .constraints import MODE_NUMBER, MODE_ALPHANUMERIC, MODE_BYTE, MODE_KANJI, MODE_ECI, MODE_MIXED, ERROR_CORRECTION_LEVEL_L, ERROR_CORRECTION_LEVEL_M, ERROR_CORRECTION_LEVEL_Q, ERROR_CORRECTION_LEVEL_H
+from .constraints import MODE_NUMBER, MODE_ALPHANUMERIC, MODE_BYTE, MODE_KANJI, MODE_ECI, MODE_MIXED, ERROR_CORRECTION_LEVEL_L, ERROR_CORRECTION_LEVEL_M, ERROR_CORRECTION_LEVEL_Q, ERROR_CORRECTION_LEVEL_H, EC_CODEWORDS
 from .errorCorrection import ErrorCorrection
 from .dataConverter import DataConverter
 from PIL import Image
@@ -25,22 +25,23 @@ class QrCode:
         dataConverter = DataConverter(version= self.version, error_correction=self.error_correction)
         data_codewords = dataConverter.encode(phrase) # Encode the data
         self.version = dataConverter.get_version() # If the version was not provided, it will be set here
+        # TODO: precompute for all the versions (cache) module sequence
         self._module_sequence = self._generate_module_sequence()  # Generate the module sequence after the version is set
 
         self._codewords = data_codewords + ErrorCorrection().getEDC(data_codewords, dataConverter.get_total_codewords()) # Add error correction codewords
 
-        # TODO: precompute for all the versions (cache)
+        self._elaborate_codewords(data_codewords)
 
         self.get_optimal_mask() # Get the optimal mask for the QR code
 
     def get_matrix(self):
         return self._matrix
     
-    def print_qr(self):
+    def print_qr(self, matrix=None):
         # char_on = '█'  # Or you can use '1'
         char_on = '#'
         char_off = ' ' # Or you can use '0'
-        for row in self._matrix:
+        for row in matrix:
             row_str = ''.join(char_on if cell == 1 else char_off for cell in row)
             print(row_str)
         print()
@@ -78,13 +79,33 @@ class QrCode:
         self._fill_area(matrix, 0, 0, 9, 9)  # Top-left finder pattern
         self._fill_area(matrix, 0, size - 8, 8, 9)  # Top-right finder pattern
         self._fill_area(matrix, size - 8, 0, 9, 8)  # Bottom-left finder pattern
-        self._fill_area(matrix, size - 9, size - 9, 5, 5)  # Alignment pattern
+
+        alignment_tracks = self._get_alignment_coordinates()
+        last_track = len(alignment_tracks) - 1
+
+        for row_index, row in enumerate(alignment_tracks):
+            for column_index, column in enumerate(alignment_tracks):
+                # Skipping the alignment near the finder patterns
+                if (row_index == 0 and (column_index == 0 or column_index == last_track)) or \
+                    (column_index == 0 and row_index == last_track):
+                    continue
+                
+                # Fill area with the alignment pattern
+                self._fill_area(matrix, row - 2, column - 2, 5, 5)
+
+        # self._fill_area(matrix, size - 9, size - 9, 5, 5)  # Alignment pattern
+
         self._fill_area(matrix, 6, 9, self.version * 4, 1)  # Horizontal timing pattern
         self._fill_area(matrix, 9, 6, 1, self.version * 4)  # Vertical timing pattern
         
         # Dark module
         matrix[size - 8, 8] = 1
-        
+
+        # Version information
+        if self.version >= 7:
+            self._fill_area(matrix, 0,size - 11, 3, 6)
+            self._fill_area(matrix, size - 11, 0, 6, 3)
+
         row_step = -1
         row = size - 1
         column = size - 1
@@ -108,14 +129,53 @@ class QrCode:
             
             index += 1
         return sequence
+
+    def _get_alignment_coordinates(self):
+        if self.version == 1:
+            return []
+
+        intervals = self.version // 7 + 1
+        distance = 4 * self.version + 4
+        step = -(-distance // (intervals * 2)) * 2  
+
+        return [6] + [distance + 6 - (intervals - 1 - index) * step for index in range(intervals)]
    
     def get_size(self):
         return self.version * 4 + 17
-    
+
+    def _elaborate_codewords(self, data_codewords):
+        # 0 = total codewords, 1 = EC codewords per block, 2 = number of blocks in group 1, 3 = number of codewords in group 1, 4 = number of blocks in group 2, 5 = number of codewords in group 2
+        table = EC_CODEWORDS[self.version][self.error_correction] 
+        # split the data into blocks and elaborate the error correction for each block
+        blocks = []
+        ec_blocks = []
+        codewords = []
+
+        for i in range(table[2] + table[4]):
+            if i < table[2]:
+                block_size = table[3]
+            else:
+                block_size = table[5]
+            blocks.append(data_codewords[:block_size])
+            data_codewords = data_codewords[block_size:]
+            ec_blocks.append(ErrorCorrection().getEDC(blocks[i], block_size+table[1]))
+
+        # interleaving data and error correction codewords
+        for c in range(table[3]):
+            for j in range(table[2] + table[4]):
+                codewords.append(blocks[j][c])
+        for j in range(table[2], table[2] + table[4]):
+            codewords.append(blocks[j][table[5] - 1])
+
+        for c in range(table[1]):
+            for j in range(table[2]+table[4]):
+                codewords.append(ec_blocks[j][c])
+        
+        self._codewords = codewords
+
     def get_optimal_mask(self):
         best_matrix = None
         best_score = float('inf')
-        
         for index in range(8):
             matrix = self._mask_matrix(index)
             penalty_score = self._get_penalty_score(matrix)
@@ -129,6 +189,7 @@ class QrCode:
         matrix = self._get_masked_matrix(mask_index)
         self._place_format_information(matrix, mask_index)
         self._place_fixed_patterns(matrix)
+        self._place_version_information(matrix)
         return matrix
     
     def _get_masked_matrix(self, mask_index):
@@ -233,6 +294,31 @@ class QrCode:
         for index in range(6):
             matrix[5 - index, 8] = format_modules[9 + index]
 
+    def _place_version_information(self, matrix):
+        size = len(matrix)
+
+        if self.version < 7:
+            return
+
+        version_info = self._get_version_information()
+
+        for index, bit in enumerate(version_info):
+            row = index // 3
+            col = index % 3
+            
+            # Update matrix at specific positions
+            matrix[5 - row][size - 9 - col] = bit
+            matrix[size - 11 + col][row] = bit
+
+    def _get_version_information(self):
+        VERSION_DIVISOR = [1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1]
+        version_bin_str = format(self.version, '06b') + '000000000000'
+        # version_bin_str = format(26, '06b') + '000000000000'
+        poly = [int(b) for b in version_bin_str]
+        # Perform polynomial division
+        poly_rest_result = ErrorCorrection().poly_rest(poly, VERSION_DIVISOR)
+        return poly[:6] + poly_rest_result
+
     def _get_format_modules(self, mask_index):
         FORMAT_DIVISOR = np.array([1, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1], dtype=int)
         FORMAT_MASK = np.array([1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0], dtype=int)
@@ -273,9 +359,25 @@ class QrCode:
         self._fill_area(matrix, size - 7, 7, 1, 7, fill=0)
 
         # Alignment pattern
-        self._fill_area(matrix, size - 9, size - 9, 5, 5)
-        self._fill_area(matrix, size - 8, size - 8, 3, 3, fill=0)
-        matrix[size - 7][size - 7] = 1
+        alignment_tracks = self._get_alignment_coordinates()
+        last_track = len(alignment_tracks) - 1
+
+        for row_index, row in enumerate(alignment_tracks):
+            for column_index, column in enumerate(alignment_tracks):
+                # Skipping the alignment near the finder patterns
+                if (row_index == 0 and (column_index == 0 or column_index == last_track)) or \
+                    (column_index == 0 and row_index == last_track):
+                    continue
+                
+                # Fill a 5x5 area with `1`
+                self._fill_area(matrix, row - 2, column - 2, 5, 5)
+                # Clear a 3x3 area with `0`
+                self._fill_area(matrix, row - 1, column - 1, 3, 3, 0)
+                # Set the specific cell to `1`
+                matrix[row][column] = 1
+        # self._fill_area(matrix, size - 9, size - 9, 5, 5)
+        # self._fill_area(matrix, size - 8, size - 8, 3, 3, fill=0)
+        # matrix[size - 7][size - 7] = 1
 
         # Timing patterns
         for pos in range(8, size - 8, 2):

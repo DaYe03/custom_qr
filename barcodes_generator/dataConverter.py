@@ -15,8 +15,6 @@ class DataConverter:
         }
 
     def encode(self, data: str):
-        """
-        """
         # detect mode 
         data, encoding_mode = self._detect_mode(data)
 
@@ -70,6 +68,9 @@ class DataConverter:
     def get_total_codewords(self):
         return EC_CODEWORDS[self.version][self.error_correction][0] + EC_CODEWORDS[self.version][self.error_correction][1]*(EC_CODEWORDS[self.version][self.error_correction][2]+EC_CODEWORDS[self.version][self.error_correction][4])
     
+    def get_ec_codewords_per_block(self):
+        return EC_CODEWORDS[self.version][self.error_correction][1]
+
     def get_version(self):
         return self.version
 
