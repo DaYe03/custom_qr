@@ -15,6 +15,8 @@ class DataConverter:
         }
 
     def encode(self, data: str):
+
+
         # detect mode 
         data, encoding_mode = self._detect_mode(data)
 

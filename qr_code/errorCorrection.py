@@ -6,7 +6,7 @@ class ErrorCorrection:
         self.size = self.prim ** self.exp
         self.LOG = bytearray(self.size)
         self.EXP = bytearray(self.size)
-        self._generate_tables()  # TODO: precompute all the tables (cache)
+        self._generate_tables()
     
     def _generate_tables(self):
         value = 1
@@ -63,7 +63,6 @@ class ErrorCorrection:
             rest.pop(0)
         return rest
     
-    # TODO: precompute all the generator polynomials (cache)
     def get_generator_poly(self, degree):
         last_poly = [1]
 
@@ -79,4 +78,3 @@ class ErrorCorrection:
         generatorPoly = self.get_generator_poly(degree)
         remainder = self.poly_rest(messagePoly, generatorPoly)
         return list(remainder)
-
