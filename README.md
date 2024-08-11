@@ -6,7 +6,7 @@ This library provides functionality to generate QR codes using Python.
 
 1. **Install Required Dependencies**
 
-   With the virtual environment activated, install the dependencies listed in `requirements.txt`:
+   Install the dependencies listed in `requirements.txt`:
 
    ```sh
    pip install -r requirements.txt
