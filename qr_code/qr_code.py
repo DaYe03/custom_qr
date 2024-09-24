@@ -1,5 +1,5 @@
 import numpy as np
-from .constraints import MODE_NUMBER, MODE_ALPHANUMERIC, MODE_BYTE, MODE_KANJI, MODE_ECI, MODE_MIXED, ERROR_CORRECTION_LEVEL_L, ERROR_CORRECTION_LEVEL_M, ERROR_CORRECTION_LEVEL_Q, ERROR_CORRECTION_LEVEL_H, EC_CODEWORDS
+from .constraints import MODE_NUMBER, MODE_ALPHANUMERIC, MODE_BYTE, MODE_KANJI, MODE_ECI, MODE_MIXED, ERROR_CORRECTION_LEVEL_L, ERROR_CORRECTION_LEVEL_M, ERROR_CORRECTION_LEVEL_Q, ERROR_CORRECTION_LEVEL_H, EC_CODEWORDS, FONT_SIZE_LARGE_LARGE, FONT_SIZE_LARGE, FONT_SIZE_SMALL, FONT_SIZE_MEDIUM, POSITION_BOTTOM_LEFT, POSITION_BOTTOM_RIGHT, POSITION_TOP_LEFT, POSITION_TOP_RIGHT, POSITION_MIDDLE
 from .errorCorrection import ErrorCorrection
 from .dataConverter import DataConverter
 from PIL import Image
@@ -20,7 +20,6 @@ class QrCode:
     qr.create_qr_image(qr_matrix, filename='qr_code.png')
     """
 
-
     def __init__(self, version=None, error_correction=ERROR_CORRECTION_LEVEL_L):
         """
         Initialize the QR code version and error correction level.
@@ -39,7 +38,7 @@ class QrCode:
         :return: matrix representing the QR code.
         """
 
-        dataConverter = DataConverter(version= self.version, error_correction=self.error_correction)
+        dataConverter = DataConverter(version = self.version, error_correction=self.error_correction)
         data_codewords = dataConverter.encode(phrase) # Encode the data
         self.version = dataConverter.get_version() # If the version was not provided, it will be set here
 
@@ -48,7 +47,6 @@ class QrCode:
         codewords = self._elaborate_codewords(data_codewords) # Generate the module sequence after the version is set, interleave the data and error correction codewords if necessary
 
         return self._get_optimal_mask(codewords, module_sequence) # Get the optimal mask for the QR code matrix
-
     
     def print_qr(self, matrix):
         """
@@ -56,6 +54,7 @@ class QrCode:
 
         :param matrix: 2D list or numpy array representing the QR code matrix.
         """
+        
         # char_on = '█'  # Or you can use '1'
         char_on = '#'
         char_off = ' ' # Or you can use '0'
@@ -88,6 +87,9 @@ class QrCode:
 
         # Save the image
         img.save(filename)
+
+    def get_version(self):
+        return self.version
 
     def _generate_module_sequence(self):
         """
@@ -169,7 +171,6 @@ class QrCode:
 
         return [6] + [distance + 6 - (intervals - 1 - index) * step for index in range(intervals)]
    
-
     def _elaborate_codewords(self, data_codewords):
         """
         Interleave the data and error correction codewords

@@ -10,6 +10,17 @@ ERROR_CORRECTION_LEVEL_M = 2
 ERROR_CORRECTION_LEVEL_Q = 3
 ERROR_CORRECTION_LEVEL_H = 4
 
+FONT_SIZE_SMALL = 1
+FONT_SIZE_MEDIUM = 2
+FONT_SIZE_LARGE = 3
+FONT_SIZE_LARGE_LARGE = 4
+
+POSITION_TOP_LEFT = 1
+POSITION_TOP_RIGHT = 2
+POSITION_BOTTOM_LEFT = 3
+POSITION_BOTTOM_RIGHT = 4
+POSITION_MIDDLE = 5
+
 EC_CODEWORDS = {
     1: {
         # total data codewords, ec codewords per block, number of blocks in group 1, data codewords of group 1s blocks, number of blocks in group 2, data codewords of group 2s blocks 
