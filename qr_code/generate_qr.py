@@ -5,14 +5,21 @@ from .dataConverter import DataConverter
 
 # TODO: cache all the module_sequence for each version
 class GenerateQR:
-    # def __init__(self):
-
     def generate(self, data, version = None, error_correction = ERROR_CORRECTION_LEVEL_L):
         encoded_data, version = self.get_encoded_data(data, version, error_correction)
         codewords = self.get_codewords(encoded_data, version, error_correction)
         module_sequence = self.get_module_sequence(codewords, version, error_correction)
         optimanl_mask = self.get_optimal_mask(codewords ,module_sequence, version, error_correction)
         return optimanl_mask, version
+
+    def print_qr(self, matrix):
+        # char_on = '█'  # Or you can use '1'
+        char_on = '#'
+        char_off = ' ' # Or you can use '0'
+        for row in matrix:
+            row_str = ''.join(char_on if cell == 1 else char_off for cell in row)
+            print(row_str)
+        print()
 
     def get_encoded_data(self, data, version, error_correction):
         dataConverter = DataConverter(version, error_correction)
