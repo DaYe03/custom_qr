@@ -4,7 +4,7 @@
 
 The **custom\_qr** library enables the generation and customization of QR codes with various options.
 
-![Example 1](.media/example1.png)![Example 2](.media/example2.png)
+![Example 1](https://github.com/DaYe03/custom_qr/blob/main/.media/example1.png)![Example 2](.media/example2.png)
 
 ![Example 3](.media/example3.png)![Example 4](.media/example4.png)
 
