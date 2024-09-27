@@ -34,15 +34,18 @@ class CustomQR:
     def draw_qr(self, matrix, 
                 background = (255,255,255), 
                 block_style = {"size": 10, "type" : 0, "color":[(0,0,0)]}, 
-                finder_style = {"color":(0,0,0)}, 
+                finder_style = None, 
                 alignment_style = None):
         # if alignment_style is not defined, use the finder style
+        if finder_style is None:
+            finder_style= {"color": block_style["color"][0]}
         if alignment_style is None:
             alignment_style = finder_style
 
         block_size = block_style["size"]
         real_size = len(matrix) * block_size
         matrix_size = len(matrix)
+        background = self._rgb_to_bgr(background)
 
         img = np.full((real_size, real_size, 3), background, dtype=np.uint8) # Create the image 
         
@@ -54,9 +57,9 @@ class CustomQR:
     
     def write_text(self, img, text_style, background, block_size, text):
         if not self.check_space(img, text, block_size, text_style):
-            return -1 # not enough space
+            return None # not enough space
         
-        color = text_style["color"]
+        color = self._rgb_to_bgr(text_style["color"])
         size = text_style["size"]
         bot = text_style["bot"]
         left = text_style["left"]
@@ -74,7 +77,7 @@ class CustomQR:
                     left += box_width
                 elif orientation == 1:
                     left -= box_width
-        return 0
+        return img
     
     def write_char(self, img, char, bot, left, block_size, color, background, orientation):
         box_height, box_width = char.shape
@@ -112,7 +115,7 @@ class CustomQR:
             img_left_start = left * block_size
             img_left_end = img_left_start + box.shape[1]
         elif orientation == 1:
-            right = left - box_width
+            right = left - box_width 
             if right > 0:
                 box = np.concatenate((h_margin,box), axis=1)
                 box_width += 1
@@ -149,8 +152,6 @@ class CustomQR:
             for i, c in enumerate(text):
                 if c in small:
                     char_height, char_width = small[c].shape
-                    # if i == 0 and left != 0:
-                    #     total_width += left
                     if i == 0 and margin != 0:
                         total_width += margin
                     if i != 0 : # sum the space between characters
@@ -164,6 +165,9 @@ class CustomQR:
         elif orientation == 1:
             return matrix_len - (total_height + bot) >= 0 and left - total_width >= 0
 
+    def _rgb_to_bgr(self, color):
+        return (color[2], color[1], color[0])
+
     def _draw_blocks(self, img, matrix, block_style, background):
         if block_style["type"] == 0: # square
             self._draw_blocks_square(img, matrix, block_style)
@@ -176,13 +180,13 @@ class CustomQR:
         colors = block_style["color"]
         color_len = len(colors)
 
-        colored_block = np.array(colors[0], dtype=np.uint8) if color_len == 1 else None
+        colored_block = np.array(self._rgb_to_bgr(colors[0]), dtype=np.uint8) if color_len == 1 else None
 
         for i in range(matrix.shape[0]):
                 for j in range(matrix.shape[1]):
                     if matrix[i][j] == 1:
                         if color_len > 1:
-                            color = colors[(i * matrix.shape[1] + j) % color_len]
+                            color = self._rgb_to_bgr(colors[(i * matrix.shape[1] + j) % color_len])
                             colored_block = np.array(color, dtype=np.uint8)
                         img[i*block_size:(i+1)*block_size, j*block_size:(j+1)*block_size] = colored_block
     
@@ -196,6 +200,7 @@ class CustomQR:
         # Pre-generate the colored circles
         colored_circles = []
         for color in colors:
+            color = self._rgb_to_bgr(color)
             colored_circle = np.full((block_size, block_size, 3), background, dtype=np.uint8)
             colored_circle = cv2.circle(colored_circle, (block_size//2, block_size //2), radius, color, -1, cv2.LINE_AA)
             colored_circles.append(colored_circle)
@@ -209,7 +214,7 @@ class CustomQR:
                     img[top_left_y:top_left_y + block_size, top_left_x:top_left_x + block_size] = colored_circles[color_index]
     
     def _draw_finder(self, img, length, finder_style, block_size, background):
-        color = finder_style['color']
+        color = self._rgb_to_bgr(finder_style['color'])
         finder_positions = [(0,0), (0, length-7), (length-7, 0)]
 
         finder = np.full((7*block_size, 7*block_size, 3), color, dtype=np.uint8)
@@ -225,7 +230,7 @@ class CustomQR:
             img[top_left_y:bottom_right_y, top_left_x:bottom_right_x] = finder
     
     def _draw_alignment(self, img, length, alignment_style, block_size, background):
-        color = alignment_style['color']
+        color = self._rgb_to_bgr(alignment_style['color'])
 
         alignment_tracks = GenerateQR.get_alignment_coordinates(int((length-21)/4)+1)
         last_track = len(alignment_tracks) - 1

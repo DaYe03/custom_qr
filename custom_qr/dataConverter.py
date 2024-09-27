@@ -15,7 +15,6 @@ class DataConverter:
         }
 
     def encode(self, data: str):
-
         # detect mode 
         data, encoding_mode = self._detect_mode(data)
 
@@ -76,8 +75,9 @@ class DataConverter:
         return self.version
 
     def _detect_mode(self, data):
-        if (urlparse(data).scheme in ('http', 'https') and urlparse(data).netloc != ''):
-            data = data.upper()
+        # check if data is url and convert to uppercase deprecated bc some scanners are case sensitive
+        # if (urlparse(data).scheme in ('http', 'https') and urlparse(data).netloc != ''):
+        #     data = data.upper() 
 
         is_numeric = all(char.isdigit() for char in data)
         is_alphanumeric = all(char in "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:" for char in data)

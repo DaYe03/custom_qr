@@ -7,19 +7,17 @@ class QrCode:
     """
     QrCode class to generate and print QR code
     """	
-    def __init__(self, version=None, error_correction=ERROR_CORRECTION_LEVEL_L):
-        self.version = version
-        self.error_correction = error_correction
+    def __init__(self):
         self.qr = GenerateQR()
         self.custom = CustomQR()
     
-    def generate(self, data):
-        return self.qr.generate(data, version=self.version, error_correction=self.error_correction)
+    def generate(self, data, version=None, error_correction=ERROR_CORRECTION_LEVEL_Q):
+        return self.qr.generate(data, version, error_correction)
     
     def create_qr_image(self, matrix, 
                         background=(255,255,255), 
                         block_style={"size": 10, "type" : 0, "color":[(0,0,0)]}, 
-                        finder_style={"color":(0,0,0)},
+                        finder_style= None,
                         alignment_style = None):
         return self.custom.draw_qr(matrix, background, block_style, finder_style, alignment_style)
     
